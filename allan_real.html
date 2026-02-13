@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel do Allan Humano</title>
+    <style>
+        body { font-family: sans-serif; background: #000; color: #0f0; display: flex; flex-direction: column; align-items: center; padding: 50px; }
+        .box { width: 80%; background: #111; border: 2px solid #0f0; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px #0f0; }
+        h2 { text-align: center; color: #0f0; text-transform: uppercase; }
+        #pergunta { font-size: 1.5em; margin: 20px 0; color: #fff; background: #222; padding: 15px; border-radius: 5px; min-height: 50px; }
+        .input-area { display: flex; gap: 10px; margin-top: 20px; }
+        input { flex: 1; padding: 15px; font-size: 1.2em; background: #000; color: #0f0; border: 1px solid #0f0; }
+        button { padding: 15px 30px; background: #0f0; color: #000; font-weight: bold; border: none; cursor: pointer; font-size: 1.2em; }
+        button:hover { background: #0a0; }
+        .status { margin-top: 10px; font-size: 0.8em; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Operador Humano (Allan Real)</h2>
+        <div style="color: #888;">Pergunta recebida do Juiz:</div>
+        <div id="pergunta">Aguardando mensagem...</div>
+        
+        <div class="input-area">
+            <input type="text" id="resposta" placeholder="Sua resposta como Allan de 17 anos..." onkeypress="if(event.key==='Enter') responder()">
+            <button onclick="responder()">ENVIAR AO JUIZ</button>
+        </div>
+        <div id="status" class="status">Status: Conectado ao servidor</div>
+    </div>
+
+    <script>
+        const IP_SERVIDOR = "192.168.86.254";
+
+        // Polling para buscar a pergunta do Juiz
+        setInterval(async () => {
+            try {
+                const res = await fetch(`http://${IP_SERVIDOR}:5000/humano/painel`);
+                const data = await res.json();
+                if(data.pergunta !== "Nenhuma pergunta ainda.") {
+                    document.getElementById('pergunta').innerText = data.pergunta;
+                    // Toca um som de alerta se quiser
+                    window.navigator.vibrate(200);
+                }
+            } catch (e) {
+                document.getElementById('status').innerText = "Status: Erro de conexão";
+            }
+        }, 2000);
+
+        async function responder() {
+            const input = document.getElementById('resposta');
+            const resTexto = input.value.trim();
+            if(!resTexto) return;
+
+            try {
+                await fetch(`http://${IP_SERVIDOR}:5000/humano/painel`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ res: resTexto }) // O campo deve ser 'res'
+                });
+
+
+            
+                input.value = '';
+                document.getElementById('pergunta').innerText = "Enviado! Aguardando próxima...";
+            } catch (e) {
+                alert("Erro ao enviar resposta.");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste de Turing - O Jogo da Imitação</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { display: flex; gap: 20px; width: 100%; max-width: 1100px; margin-top: 20px; }
+        .chat-card { flex: 1; background: #1e293b; border-radius: 15px; height: 500px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #38bdf8; }
+        .chat-header { background: #334155; padding: 15px; text-align: center; font-weight: bold; }
+        .history { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #0f172a; }
+        .input-area { padding: 10px; background: #1e293b; display: flex; gap: 5px; }
+        input { flex: 1; padding: 10px; border-radius: 5px; border: none; }
+        button { padding: 10px; background: #38bdf8; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .msg-juiz { align-self: flex-start; background: #334155; padding: 8px; border-radius: 8px; }
+        .msg-resp { align-self: flex-end; background: #0369a1; padding: 8px; border-radius: 8px; }
+        .loading { font-size: 0.8em; color: #94a3b8; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>Palavra: Teste de Turing</h1>
+    <div class="container">
+        <div class="chat-card">
+            <div class="chat-header">TERMINAL A</div>
+            <div id="histA" class="history"></div>
+            <div class="input-area">
+                <input type="text" id="inA" placeholder="Fale com A..." onkeypress="if(event.key==='Enter') enviar('A')">
+                <button onclick="enviar('A')">Enviar</button>
+            </div>
+        </div>
+        <div class="chat-card">
+            <div class="chat-header">TERMINAL B</div>
+            <div id="histB" class="history"></div>
+            <div class="input-area">
+                <input type="text" id="inB" placeholder="Fale com B..." onkeypress="if(event.key==='Enter') enviar('B')">
+                <button onclick="enviar('B')">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const IP_SERVIDOR = "192.168.86.254"; 
+
+        async function enviar(canal) {
+            const input = document.getElementById('in' + canal);
+            const hist = document.getElementById('hist' + canal);
+            const msg = input.value.trim();
+            if(!msg) return;
+
+            hist.innerHTML += `<div class="msg-juiz"><b>Você:</b> ${msg}</div>`;
+            input.value = '';
+            
+            const loadId = 'load-' + Math.random();
+            hist.innerHTML += `<div id="${loadId}" class="loading">Digitando...</div>`;
+            hist.scrollTop = hist.scrollHeight;
+
+            try {
+                const response = await fetch(`http://${IP_SERVIDOR}:5000/enviar_juiz`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ canal: canal, msg: msg })
+                });
+                const data = await response.json();
+                document.getElementById(loadId).remove();
+                hist.innerHTML += `<div class="msg-resp">${data.resposta}</div>`;
+            } catch (e) {
+                document.getElementById(loadId).innerText = "Erro de conexão.";
+            }
+            hist.scrollTop = hist.scrollHeight;
+        }
+    </script>
+</body>
+</html>
